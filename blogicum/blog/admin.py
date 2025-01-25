@@ -2,18 +2,24 @@ from django.contrib import admin
 from .models import Category, Location, Post
 
 
+admin.site.empty_value_display = '(Пусто)'
+
+
 class CategoryAdmin(admin.ModelAdmin):
     list_display = (
         'title',
         'description',
-        'slug'
+        'slug',
+        'is_published',
+        'created_at'
     )
     list_display_links = (
         'title',
     )
     list_editable = (
         'description',
-        'slug'
+        'slug',
+        'is_published'
     )
     search_fields = (
         'title',
@@ -23,12 +29,17 @@ class CategoryAdmin(admin.ModelAdmin):
 class LocationAdmin(admin.ModelAdmin):
     list_display = (
         'name',
+        'is_published',
+        'created_at'
     )
     list_display_links = (
         'name',
     )
     search_fields = (
         'name',
+    )
+    list_editable = (
+        'is_published',
     )
 
 
@@ -39,12 +50,14 @@ class PostAdmin(admin.ModelAdmin):
         'location',
         'category',
         'author',
-        'pub_date'
+        'pub_date',
+        'is_published'
     )
     list_editable = (
         'text',
         'location',
-        'category'
+        'category',
+        'is_published'
     )
     list_display_links = (
         'title',
