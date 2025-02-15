@@ -2,40 +2,50 @@ from django.shortcuts import render, get_object_or_404
 from django.db.models import Q
 from .models import Post, Category
 from datetime import datetime
+from django.views.generic import (
+    ListView,
+    CreateView,
+    DetailView,
+)
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth import get_user_model
+from .forms import CreatePostForm
+from django.utils import timezone
 
 
-def index(request):
-    template = 'blog/index.html'
-    post_list = Post.objects.select_related(
+User = get_user_model()
+
+
+class IndexListView(ListView):
+    template_name = 'blog/index.html'
+    ordering = '-pub_date'
+    queryset = Post.objects.select_related(
         'location',
         'author'
     ).filter(
         pub_date__lte=datetime.now(),
         is_published=True,
         category__is_published=True
-    ).order_by(
-        '-pub_date'
-    )[:5]
-    context = {
-        'post_list': post_list
-    }
-    return render(request, template, context)
-
-
-def post_detail(request, id):
-    template = 'blog/detail.html'
-    post = get_object_or_404(
-        Post.objects.filter(
-            Q(is_published=True)
-            | Q(category__is_published=True),
-            pub_date__lte=datetime.now(),
-        ),
-        pk=id
     )
-    context = {
-        'post': post
-    }
-    return render(request, template, context)
+    paginate_by = 5
+
+
+class CreatePostCreateView(LoginRequiredMixin, CreateView):
+    template_name = 'blog/create.html'
+    model = Post
+    form_class = CreatePostForm
+
+
+class PostDetailView(DetailView):
+    template_name = 'blog/detail.html'
+    model = Post
+    pk_url_kwarg = 'id'
+
+    def get_queryset(self):
+        return Post.objects.select_related('category').filter(
+            (Q(is_published=True) | Q(category__is_published=True)) &
+            Q(pub_date__lte=timezone.now())
+        )
 
 
 def category_posts(request, category_slug):
