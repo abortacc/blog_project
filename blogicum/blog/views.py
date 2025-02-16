@@ -37,9 +37,12 @@ class IndexListView(ListView):
     paginate_by = 5
 
 
-class PostCreateView(LoginRequiredMixin, CreateView):
-    template_name = 'blog/create.html'
+class PostMixin:
     model = Post
+    template_name = 'blog.create.html'
+
+
+class PostCreateView(PostMixin, LoginRequiredMixin, CreateView):
     form_class = PostForm
 
     def form_valid(self, form):
