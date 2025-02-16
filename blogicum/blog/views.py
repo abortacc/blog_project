@@ -8,6 +8,7 @@ from django.views.generic import (
     DetailView,
 )
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic.list import MultipleObjectMixin
 from django.contrib.auth import get_user_model
 from .forms import CreatePostForm
 from django.utils import timezone
@@ -46,6 +47,25 @@ class PostDetailView(DetailView):
             (Q(is_published=True) | Q(category__is_published=True)) &
             Q(pub_date__lte=timezone.now())
         )
+
+
+class ProfileListView(ListView):
+    template_name = 'blog/profile.html'
+    model = Post
+    paginate_by = 5
+
+    def get_queryset(self):
+        return Post.objects.select_related('author').filter(
+            author__username=self.kwargs['username']
+        ).order_by('-pub_date')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["profile"] = get_object_or_404(
+            User,
+            username=self.kwargs['username']
+        )
+        return context
 
 
 def category_posts(request, category_slug):
