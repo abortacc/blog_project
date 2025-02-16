@@ -1,4 +1,4 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.db.models import Q
 from .models import Post, Category, Comment
 from datetime import datetime
@@ -6,11 +6,15 @@ from django.views.generic import (
     ListView,
     CreateView,
     DetailView,
+    UpdateView,
+    DeleteView,
+    View,
 )
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import get_user_model
 from .forms import PostForm, CommentForm
 from django.utils import timezone
+from django.urls import reverse
 
 
 User = get_user_model()
@@ -34,6 +38,13 @@ class CreatePostCreateView(LoginRequiredMixin, CreateView):
     template_name = 'blog/create.html'
     model = Post
     form_class = PostForm
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('blog:profile', args=[self.request.user])
 
 
 class PostDetailView(DetailView):
@@ -76,13 +87,41 @@ class ProfileListView(ListView):
 class CommentCreateView(LoginRequiredMixin, CreateView):
     model = Comment
     form_class = CommentForm
-    template_name = "blog/comment.html"
-    post_obj = None
+    template_name = 'blog/comment.html'
 
     def form_valid(self, form):
         form.instance.author = self.request.user
-        form.instance.post = self.post_obj
+        form.instance.post = get_object_or_404(Post, id=self.kwargs['post_id'])
         return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('blog:post_detail', kwargs={'id': self.kwargs['post_id']})
+
+
+class CommentMixin(LoginRequiredMixin, View):
+    model = Comment
+    template_name = 'blog/comment.html'
+    pk_url_kwarg = 'comment_id'
+
+    def dispatch(self, request, *args, **kwargs):
+        comment = get_object_or_404(
+            Comment,
+            pk=kwargs['comment_id']
+        )
+        if comment.author != request.user:
+            return redirect('blog:post_detail', id=kwargs['post_id'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return reverse('blog:post_detail', kwargs={'id': self.kwargs['post_id']})
+
+
+class CommentUpdateView(CommentMixin, UpdateView):
+    form_class = CommentForm
+
+
+class CommentDeleteView(CommentMixin, DeleteView):
+    pass
 
 
 class CategoryPostsListView(ListView):

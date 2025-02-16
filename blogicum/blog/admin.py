@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Location, Post
+from .models import Category, Location, Post, Comment
 
 
 admin.site.empty_value_display = '(Пусто)'
@@ -72,6 +72,7 @@ class PostAdmin(admin.ModelAdmin):
     )
 
 
+admin.site.register(Comment)
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(Location, LocationAdmin)
 admin.site.register(Post, PostAdmin)
