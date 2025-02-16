@@ -1,5 +1,5 @@
 from django.shortcuts import get_object_or_404, redirect
-from django.db.models import Q
+from django.db.models import Q, Count
 from .models import Post, Category, Comment
 from datetime import datetime
 from django.views.generic import (
@@ -25,16 +25,19 @@ class IndexListView(ListView):
     ordering = '-pub_date'
     queryset = Post.objects.select_related(
         'location',
-        'author'
+        'author',
+        'category'
     ).filter(
         pub_date__lte=datetime.now(),
         is_published=True,
         category__is_published=True
+    ).annotate(
+        comments_count=Count('comments')
     )
     paginate_by = 5
 
 
-class CreatePostCreateView(LoginRequiredMixin, CreateView):
+class PostCreateView(LoginRequiredMixin, CreateView):
     template_name = 'blog/create.html'
     model = Post
     form_class = PostForm
