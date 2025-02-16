@@ -39,7 +39,7 @@ class IndexListView(ListView):
 
 class PostMixin:
     model = Post
-    template_name = 'blog.create.html'
+    template_name = 'blog/create.html'
 
 
 class PostCreateView(PostMixin, LoginRequiredMixin, CreateView):
@@ -51,6 +51,31 @@ class PostCreateView(PostMixin, LoginRequiredMixin, CreateView):
 
     def get_success_url(self):
         return reverse('blog:profile', args=[self.request.user])
+
+
+class PostUpdateView(PostMixin, LoginRequiredMixin, UpdateView):
+    form_class = PostForm
+    pk_url_kwarg = 'id'
+
+    def get_success_url(self):
+        return reverse('blog:post_detail', kwargs={'id': self.kwargs['id']})
+
+
+class PostDeleteView(PostMixin, LoginRequiredMixin, DeleteView):
+    pk_url_kwarg = 'id'
+
+    def dispatch(self, request, *args, **kwargs):
+        if self.get_object().author != request.user:
+            return redirect('blog:post_detail', id=self.kwargs['post_id'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form"] = PostForm(instance=self.object)
+        return context
+
+    def get_success_url(self):
+        return reverse("blog:profile", kwargs={"username": self.request.user})
 
 
 class PostDetailView(DetailView):
