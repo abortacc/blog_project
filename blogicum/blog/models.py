@@ -71,3 +71,22 @@ class Post(IsPubslishedClass):
 
     def __str__(self):
         return f"Публикация №{self.id}: '{self.title}'"
+
+
+class Comment(IsPubslishedClass):
+    text = models.TextField(verbose_name='Текст', max_length=1024)
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        related_name='comments',
+        verbose_name='публикация'
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='автор'
+    )
+
+    class Meta:
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'комментарии'

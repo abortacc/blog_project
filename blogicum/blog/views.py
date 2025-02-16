@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Q
-from .models import Post, Category
+from .models import Post, Category, Comment
 from datetime import datetime
 from django.views.generic import (
     ListView,
@@ -8,9 +8,8 @@ from django.views.generic import (
     DetailView,
 )
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic.list import MultipleObjectMixin
 from django.contrib.auth import get_user_model
-from .forms import CreatePostForm
+from .forms import PostForm, CommentForm
 from django.utils import timezone
 
 
@@ -34,7 +33,7 @@ class IndexListView(ListView):
 class CreatePostCreateView(LoginRequiredMixin, CreateView):
     template_name = 'blog/create.html'
     model = Post
-    form_class = CreatePostForm
+    form_class = PostForm
 
 
 class PostDetailView(DetailView):
@@ -47,6 +46,12 @@ class PostDetailView(DetailView):
             (Q(is_published=True) | Q(category__is_published=True)) &
             Q(pub_date__lte=timezone.now())
         )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form'] = CommentForm()
+        context['comments'] = self.object.comments.select_related('author')
+        return context
 
 
 class ProfileListView(ListView):
@@ -68,20 +73,35 @@ class ProfileListView(ListView):
         return context
 
 
-def category_posts(request, category_slug):
-    template = 'blog/category.html'
-    category = get_object_or_404(
-        Category,
-        slug=category_slug,
-        is_published=True
-    )
-    post_list = Post.objects.select_related('category').filter(
-        category__slug=category_slug,
-        pub_date__lte=datetime.now()
-    )
-    context = {
-        'category_slug': category_slug,
-        'category': category,
-        'post_list': post_list
-    }
-    return render(request, template, context)
+class CommentCreateView(LoginRequiredMixin, CreateView):
+    model = Comment
+    form_class = CommentForm
+    template_name = "blog/comment.html"
+    post_obj = None
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        form.instance.post = self.post_obj
+        return super().form_valid(form)
+
+
+class CategoryPostsListView(ListView):
+    template_name = 'blog/category.html'
+    model = Post
+    slug_url_kwarg = 'category_slug'
+    paginate_by = 5
+
+    def get_queryset(self):
+        return Post.objects.select_related('category').filter(
+            category__slug=self.kwargs.get('category_slug'),
+            pub_date__lte=datetime.now()
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['category'] = get_object_or_404(
+            Category,
+            slug=self.kwargs.get('category_slug'),
+            is_published=True
+        )
+        return context
