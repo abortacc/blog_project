@@ -12,7 +12,7 @@ from django.views.generic import (
 )
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import get_user_model
-from .forms import PostForm, CommentForm
+from .forms import PostForm, CommentForm, ProfileForm
 from django.utils import timezone
 from django.urls import reverse
 
@@ -113,6 +113,19 @@ class ProfileListView(ListView):
             username=self.kwargs['username']
         )
         return context
+
+
+class ProfileUpdateView(UpdateView):
+    template_name = 'blog/user.html'
+    model = User
+    form_class = ProfileForm
+
+    def get_object(self, queryset=None):
+        return self.request.user
+
+    def get_success_url(self):
+        return reverse('blog:profile', args=[self.request.user])
+
 
 
 class CommentCreateView(LoginRequiredMixin, CreateView):
