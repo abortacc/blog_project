@@ -127,7 +127,6 @@ class ProfileUpdateView(UpdateView):
         return reverse('blog:profile', args=[self.request.user])
 
 
-
 class CommentCreateView(LoginRequiredMixin, CreateView):
     model = Comment
     form_class = CommentForm
