@@ -104,6 +104,8 @@ class ProfileListView(ListView):
     def get_queryset(self):
         return Post.objects.select_related('author').filter(
             author__username=self.kwargs['username']
+        ).annotate(
+            comments_count=Count("comments")
         ).order_by('-pub_date')
 
     def get_context_data(self, **kwargs):
