@@ -5,6 +5,9 @@ from django.contrib.auth.forms import UserCreationForm
 from django.conf.urls.static import static
 from django.conf import settings
 
+handler404 = 'core.views.page_not_found'
+handler500 = 'core.views.server_error'
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('blog.urls', namespace='blog')),
