@@ -1,7 +1,6 @@
 from django.shortcuts import get_object_or_404, redirect
-from django.db.models import Q, Count
+from django.db.models import Count
 from .models import Post, Category, Comment
-from datetime import datetime
 from django.views.generic import (
     ListView,
     CreateView,
@@ -28,7 +27,7 @@ class IndexListView(ListView):
         'author',
         'category'
     ).filter(
-        pub_date__lte=datetime.now(),
+        pub_date__lte=timezone.now(),
         is_published=True,
         category__is_published=True
     ).annotate(
@@ -81,12 +80,16 @@ class PostDeleteView(PostMixin, LoginRequiredMixin, DeleteView):
 class PostDetailView(DetailView):
     template_name = 'blog/detail.html'
     model = Post
-    pk_url_kwarg = 'id'
 
-    def get_queryset(self):
-        return Post.objects.select_related('category').filter(
-            (Q(is_published=True) | Q(category__is_published=True)) &
-            Q(pub_date__lte=timezone.now())
+    def get_object(self, queryset=None):
+        return get_object_or_404(
+            self.model.objects.select_related('category', 'author', 'location')
+            .filter(
+                is_published=True,
+                category__is_published=True,
+                pub_date__lte=timezone.now()
+            ),
+            pk=self.kwargs['id']
         )
 
     def get_context_data(self, **kwargs):
@@ -178,7 +181,7 @@ class CategoryPostsListView(ListView):
     def get_queryset(self):
         return Post.objects.select_related('category').filter(
             category__slug=self.kwargs.get('category_slug'),
-            pub_date__lte=datetime.now()
+            pub_date__lte=timezone.now()
         )
 
     def get_context_data(self, **kwargs):
